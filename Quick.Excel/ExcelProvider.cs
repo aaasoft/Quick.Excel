@@ -74,7 +74,7 @@ namespace Quick.Excel
                     //设置单元格的值
                     cell.SetCellValue(td.value);
                     //设置列的宽度自适应
-                    var byteCount = Encoding.Default.GetByteCount(td.value);
+                    var byteCount = string.IsNullOrEmpty(td.value) ? 1 : Encoding.Default.GetByteCount(td.value);
                     var needColumnWidth = byteCount * 256;
                     if (td.colspan > 1)
                     {
