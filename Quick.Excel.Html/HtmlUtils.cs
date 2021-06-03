@@ -1,5 +1,5 @@
 ﻿using HtmlAgilityPack;
-using Quick.Excel.Model;
+using Quick.Excel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Quick.Excel.Model
+namespace Quick.Excel
 {
     public class tr: List<td>
     {

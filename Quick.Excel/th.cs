@@ -1,4 +1,4 @@
-﻿namespace Quick.Excel.Model
+﻿namespace Quick.Excel
 {
     public class th : td
     {

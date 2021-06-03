@@ -1,5 +1,4 @@
-﻿using Quick.Excel.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Quick.Excel

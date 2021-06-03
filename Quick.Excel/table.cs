@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Quick.Excel.Model
+namespace Quick.Excel
 {
     public class table : List<tr>
     {

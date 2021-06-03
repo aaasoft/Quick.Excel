@@ -2,7 +2,6 @@
 using System.IO;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
-using Quick.Excel.Model;
 
 namespace Quick.Excel
 {

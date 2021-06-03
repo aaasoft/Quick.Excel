@@ -1,4 +1,4 @@
-﻿namespace Quick.Excel.Model
+﻿namespace Quick.Excel
 {
     /// <summary>
     /// 文字布局枚举
