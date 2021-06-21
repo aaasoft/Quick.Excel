@@ -2,6 +2,7 @@
 using System.IO;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
+using System.Collections.Generic;
 
 namespace Quick.Excel
 {
@@ -44,156 +45,175 @@ namespace Quick.Excel
 
         public IWorkbook CreateWorkbook(table table)
         {
-            IWorkbook workbook = System.Activator.CreateInstance<T>();
-            ISheet sheet = workbook.CreateSheet("Sheet1");
-
-            //当前行号
-            var cRowInd = 0;
-            //当前列号
-            var cColInd = 0;
-            //当前颜色序号
-            var cColorIndex = 0;
-
-            for (int i = 0; i < table.Count; i++)
+            return CreateWorkbook(new Dictionary<string, table>()
             {
-                cColInd = 0;
-                while (sheet.IsMergedRegion(
-                    new CellRangeAddress(cRowInd, cRowInd, cColInd, cColInd)))
-                    cColInd++;
+                ["Sheet1"] = table
+            });
+        }
 
-                var tr = table[i];
-                IRow row = sheet.CreateRow(cRowInd);
-                for (int j = 0; j < tr.Count; j++)
+        public IWorkbook CreateWorkbook(Dictionary<string,table> tableDict)
+        {
+            IWorkbook workbook = System.Activator.CreateInstance<T>();
+            foreach (var sheetName in tableDict.Keys)
+            {
+                var table = tableDict[sheetName];
+                ISheet sheet = workbook.CreateSheet(sheetName);
+                //当前行号
+                var cRowInd = 0;
+                //当前列号
+                var cColInd = 0;
+                //当前颜色序号
+                var cColorIndex = 0;
+
+                for (int i = 0; i < table.Count; i++)
                 {
+                    cColInd = 0;
                     while (sheet.IsMergedRegion(
-                    new CellRangeAddress(cRowInd, cRowInd, cColInd, cColInd)))
+                        new CellRangeAddress(cRowInd, cRowInd, cColInd, cColInd)))
                         cColInd++;
 
-                    var td = tr[j];
-                    ICell cell = row.CreateCell(cColInd);
-                    //设置单元格的值
-                    cell.SetCellValue(td.value);
-                    //设置列的宽度自适应
-                    var byteCount = string.IsNullOrEmpty(td.value) ? 1 : Encoding.Default.GetByteCount(td.value);
-                    var needColumnWidth = byteCount * 256;
-                    if (td.colspan > 1)
+                    var tr = table[i];
+                    IRow row = sheet.CreateRow(cRowInd);
+                    for (int j = 0; j < tr.Count; j++)
                     {
-                        //如果跨列
-                        var beforeColumnWidth = 0;
-                        for (var z = 0; z < td.colspan; z++)
-                        {
-                            beforeColumnWidth += sheet.GetColumnWidth(cell.ColumnIndex + z);
-                        }
-                        var firstColumnWidth = sheet.GetColumnWidth(cell.ColumnIndex);
-                        if (beforeColumnWidth < needColumnWidth)
-                            sheet.SetColumnWidth(cell.ColumnIndex, firstColumnWidth + needColumnWidth - beforeColumnWidth);
-                    }
-                    else
-                    {
-                        //单个列
-                        var beforeColumnWidth = sheet.GetColumnWidth(cell.ColumnIndex);
-                        if (beforeColumnWidth < needColumnWidth)
-                            sheet.SetColumnWidth(cell.ColumnIndex, needColumnWidth);
-                    }
+                        while (sheet.IsMergedRegion(
+                        new CellRangeAddress(cRowInd, cRowInd, cColInd, cColInd)))
+                            cColInd++;
 
-                    //合并单元格
-                    if (td.rowspan > 1 || td.colspan > 1)
-                    {
-                        sheet.AddMergedRegion(new CellRangeAddress(
-                            cRowInd,
-                            cRowInd - 1 + td.rowspan,
-                            cColInd,
-                            cColInd - 1 + td.colspan));
+                        var td = tr[j];
+                        ICell cell = row.CreateCell(cColInd);
+                        //设置单元格的值
+                        cell.SetCellValue(td.value);
+                        //设置列的宽度自适应
+                        var byteCount = string.IsNullOrEmpty(td.value) ? 1 : Encoding.Default.GetByteCount(td.value);
+                        var needColumnWidth = byteCount * 256;
                         if (td.colspan > 1)
-                            cColInd += td.colspan - 1;
-                    }
+                        {
+                            //如果跨列
+                            var beforeColumnWidth = 0;
+                            for (var z = 0; z < td.colspan; z++)
+                            {
+                                beforeColumnWidth += sheet.GetColumnWidth(cell.ColumnIndex + z);
+                            }
+                            var firstColumnWidth = sheet.GetColumnWidth(cell.ColumnIndex);
+                            if (beforeColumnWidth < needColumnWidth)
+                                sheet.SetColumnWidth(cell.ColumnIndex, firstColumnWidth + needColumnWidth - beforeColumnWidth);
+                        }
+                        else
+                        {
+                            //单个列
+                            var beforeColumnWidth = sheet.GetColumnWidth(cell.ColumnIndex);
+                            if (beforeColumnWidth < needColumnWidth)
+                                sheet.SetColumnWidth(cell.ColumnIndex, needColumnWidth);
+                        }
 
-                    //单元格样式
-                    ICellStyle cellStyle = workbook.CreateCellStyle();
-                    //文字布局
-                    switch (td.text_align)
-                    {
-                        case text_align.initial:
-                            cellStyle.Alignment = HorizontalAlignment.General;
-                            break;
-                        case text_align.left:
-                            cellStyle.Alignment = HorizontalAlignment.Left;
-                            break;
-                        case text_align.center:
-                            cellStyle.Alignment = HorizontalAlignment.Center;
-                            break;
-                        case text_align.right:
-                            cellStyle.Alignment = HorizontalAlignment.Right;
-                            break;
-                    }
-                    cellStyle.VerticalAlignment = VerticalAlignment.Center;
-                    //字体
-                    IFont headerfont = workbook.CreateFont();
-                    if (td.color_bytes != null)
-                    {
-                        if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
-                            headerfont.Color = GetColorIndex(workbook, td.color_bytes, ref cColorIndex);
-                        else
+                        //合并单元格
+                        if (td.rowspan > 1 || td.colspan > 1)
                         {
-                            var myFont = (NPOI.XSSF.UserModel.XSSFFont)headerfont;
-                            myFont.SetColor(new NPOI.XSSF.UserModel.XSSFColor(td.color_bytes));
+                            sheet.AddMergedRegion(new CellRangeAddress(
+                                cRowInd,
+                                cRowInd - 1 + td.rowspan,
+                                cColInd,
+                                cColInd - 1 + td.colspan));
+                            if (td.colspan > 1)
+                                cColInd += td.colspan - 1;
                         }
-                    }
-                    if (td.bold)
-                        headerfont.IsBold = true;
-                    cellStyle.SetFont(headerfont);
-                    //背景
-                    if (td.background_color_bytes != null)
-                    {
-                        if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
-                        {
-                            cellStyle.FillForegroundColor = GetColorIndex(workbook, td.background_color_bytes, ref cColorIndex);
-                            cellStyle.FillPattern = FillPattern.SolidForeground;
-                        }
-                        else
-                        {
-                            var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
-                            myCellStyle.SetFillForegroundColor(new NPOI.XSSF.UserModel.XSSFColor(td.background_color_bytes));
-                            cellStyle.FillPattern = FillPattern.SolidForeground;
-                        }
-                    }
-                    //边框
-                    if (td.border_color_bytes != null)
-                    {
-                        if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
-                        {
-                            var color = GetColorIndex(workbook, td.border_color_bytes, ref cColorIndex);
-                            cellStyle.BorderTop = BorderStyle.Thin;
-                            cellStyle.TopBorderColor = color;
-                            cellStyle.BorderRight = BorderStyle.Thin;
-                            cellStyle.RightBorderColor = color;
-                            cellStyle.BorderBottom = BorderStyle.Thin;
-                            cellStyle.BottomBorderColor = color;
-                            cellStyle.BorderLeft = BorderStyle.Thin;
-                            cellStyle.LeftBorderColor = color;
-                        }
-                        else
-                        {
-                            var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
-                            var color = new NPOI.XSSF.UserModel.XSSFColor(td.border_color_bytes);
-                            myCellStyle.BorderTop = BorderStyle.Thin;
-                            myCellStyle.SetTopBorderColor(color);
-                            myCellStyle.BorderRight = BorderStyle.Thin;
-                            myCellStyle.SetRightBorderColor(color);
-                            myCellStyle.BorderBottom = BorderStyle.Thin;
-                            myCellStyle.SetBottomBorderColor(color);
-                            myCellStyle.BorderLeft = BorderStyle.Thin;
-                            myCellStyle.SetLeftBorderColor(color);
-                        }
-                    }
-                    //设置单元格样式
-                    cell.CellStyle = cellStyle;
 
-                    cColInd++;
+                        //单元格样式
+                        ICellStyle cellStyle = workbook.CreateCellStyle();
+                        //文字布局
+                        switch (td.text_align)
+                        {
+                            case text_align.initial:
+                                cellStyle.Alignment = HorizontalAlignment.General;
+                                break;
+                            case text_align.left:
+                                cellStyle.Alignment = HorizontalAlignment.Left;
+                                break;
+                            case text_align.center:
+                                cellStyle.Alignment = HorizontalAlignment.Center;
+                                break;
+                            case text_align.right:
+                                cellStyle.Alignment = HorizontalAlignment.Right;
+                                break;
+                        }
+                        cellStyle.VerticalAlignment = VerticalAlignment.Center;
+                        //字体
+                        IFont headerfont = workbook.CreateFont();
+                        if (td.color_bytes != null)
+                        {
+                            if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                                headerfont.Color = GetColorIndex(workbook, td.color_bytes, ref cColorIndex);
+                            else
+                            {
+                                var myFont = (NPOI.XSSF.UserModel.XSSFFont)headerfont;
+                                myFont.SetColor(new NPOI.XSSF.UserModel.XSSFColor(td.color_bytes));
+                            }
+                        }
+                        if (td.bold)
+                            headerfont.IsBold = true;
+                        cellStyle.SetFont(headerfont);
+                        //背景
+                        if (td.background_color_bytes != null)
+                        {
+                            if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                            {
+                                cellStyle.FillForegroundColor = GetColorIndex(workbook, td.background_color_bytes, ref cColorIndex);
+                                cellStyle.FillPattern = FillPattern.SolidForeground;
+                            }
+                            else
+                            {
+                                var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
+                                myCellStyle.SetFillForegroundColor(new NPOI.XSSF.UserModel.XSSFColor(td.background_color_bytes));
+                                cellStyle.FillPattern = FillPattern.SolidForeground;
+                            }
+                        }
+                        //边框
+                        if (td.border_color_bytes != null)
+                        {
+                            if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                            {
+                                var color = GetColorIndex(workbook, td.border_color_bytes, ref cColorIndex);
+                                cellStyle.BorderTop = BorderStyle.Thin;
+                                cellStyle.TopBorderColor = color;
+                                cellStyle.BorderRight = BorderStyle.Thin;
+                                cellStyle.RightBorderColor = color;
+                                cellStyle.BorderBottom = BorderStyle.Thin;
+                                cellStyle.BottomBorderColor = color;
+                                cellStyle.BorderLeft = BorderStyle.Thin;
+                                cellStyle.LeftBorderColor = color;
+                            }
+                            else
+                            {
+                                var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
+                                var color = new NPOI.XSSF.UserModel.XSSFColor(td.border_color_bytes);
+                                myCellStyle.BorderTop = BorderStyle.Thin;
+                                myCellStyle.SetTopBorderColor(color);
+                                myCellStyle.BorderRight = BorderStyle.Thin;
+                                myCellStyle.SetRightBorderColor(color);
+                                myCellStyle.BorderBottom = BorderStyle.Thin;
+                                myCellStyle.SetBottomBorderColor(color);
+                                myCellStyle.BorderLeft = BorderStyle.Thin;
+                                myCellStyle.SetLeftBorderColor(color);
+                            }
+                        }
+                        //设置单元格样式
+                        cell.CellStyle = cellStyle;
+
+                        cColInd++;
+                    }
+                    cRowInd++;
                 }
-                cRowInd++;
             }
             return workbook;
+        }
+
+        public void ExportTable(Dictionary<string, table> tableDict, Stream output)
+        {
+            var workbook = CreateWorkbook(tableDict);
+            workbook.Write(output);
+            workbook.Close();
+            workbook = null;
         }
 
         public void ExportTable(table table, Stream output)
