@@ -51,8 +51,10 @@ namespace Quick.Excel
             });
         }
 
-        public IWorkbook CreateWorkbook(Dictionary<string,table> tableDict)
+        public IWorkbook CreateWorkbook(Dictionary<string, table> tableDict)
         {
+            Dictionary<CellStyleInfo, ICellStyle> cellStyleCacheDict = new Dictionary<CellStyleInfo, ICellStyle>();
+
             IWorkbook workbook = System.Activator.CreateInstance<T>();
             foreach (var sheetName in tableDict.Keys)
             {
@@ -118,83 +120,92 @@ namespace Quick.Excel
                             if (td.colspan > 1)
                                 cColInd += td.colspan - 1;
                         }
-
                         //单元格样式
-                        ICellStyle cellStyle = workbook.CreateCellStyle();
-                        //文字布局
-                        switch (td.text_align)
+                        CellStyleInfo cellStyleInfo = new CellStyleInfo(td);
+                        ICellStyle cellStyle = null;
+                        if (cellStyleCacheDict.ContainsKey(cellStyleInfo))
                         {
-                            case text_align.initial:
-                                cellStyle.Alignment = HorizontalAlignment.General;
-                                break;
-                            case text_align.left:
-                                cellStyle.Alignment = HorizontalAlignment.Left;
-                                break;
-                            case text_align.center:
-                                cellStyle.Alignment = HorizontalAlignment.Center;
-                                break;
-                            case text_align.right:
-                                cellStyle.Alignment = HorizontalAlignment.Right;
-                                break;
+                            cellStyle = cellStyleCacheDict[cellStyleInfo];
                         }
-                        cellStyle.VerticalAlignment = VerticalAlignment.Center;
-                        //字体
-                        IFont headerfont = workbook.CreateFont();
-                        if (td.color_bytes != null)
+                        else
                         {
-                            if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
-                                headerfont.Color = GetColorIndex(workbook, td.color_bytes, ref cColorIndex);
-                            else
+                            cellStyle = workbook.CreateCellStyle();
+                            cellStyleCacheDict[cellStyleInfo] = cellStyle;
+                            //文字布局
+                            switch (td.text_align)
                             {
-                                var myFont = (NPOI.XSSF.UserModel.XSSFFont)headerfont;
-                                myFont.SetColor(new NPOI.XSSF.UserModel.XSSFColor(td.color_bytes));
+                                case text_align.initial:
+                                    cellStyle.Alignment = HorizontalAlignment.General;
+                                    break;
+                                case text_align.left:
+                                    cellStyle.Alignment = HorizontalAlignment.Left;
+                                    break;
+                                case text_align.center:
+                                    cellStyle.Alignment = HorizontalAlignment.Center;
+                                    break;
+                                case text_align.right:
+                                    cellStyle.Alignment = HorizontalAlignment.Right;
+                                    break;
                             }
-                        }
-                        if (td.bold)
-                            headerfont.IsBold = true;
-                        cellStyle.SetFont(headerfont);
-                        //背景
-                        if (td.background_color_bytes != null)
-                        {
-                            if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                            cellStyle.VerticalAlignment = VerticalAlignment.Center;
+                            //字体
+                            IFont headerfont = workbook.CreateFont();
+                            if (td.color_bytes != null)
                             {
-                                cellStyle.FillForegroundColor = GetColorIndex(workbook, td.background_color_bytes, ref cColorIndex);
-                                cellStyle.FillPattern = FillPattern.SolidForeground;
+                                if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                                    headerfont.Color = GetColorIndex(workbook, td.color_bytes, ref cColorIndex);
+                                else
+                                {
+                                    var myFont = (NPOI.XSSF.UserModel.XSSFFont)headerfont;
+                                    myFont.SetColor(new NPOI.XSSF.UserModel.XSSFColor(td.color_bytes));
+                                }
                             }
-                            else
+                            if (td.bold)
+                                headerfont.IsBold = true;
+                            cellStyle.SetFont(headerfont);
+                            //背景
+                            if (td.background_color_bytes != null)
                             {
-                                var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
-                                myCellStyle.SetFillForegroundColor(new NPOI.XSSF.UserModel.XSSFColor(td.background_color_bytes));
-                                cellStyle.FillPattern = FillPattern.SolidForeground;
+                                if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                                {
+                                    cellStyle.FillForegroundColor = GetColorIndex(workbook, td.background_color_bytes, ref cColorIndex);
+                                    cellStyle.FillPattern = FillPattern.SolidForeground;
+                                }
+                                else
+                                {
+                                    var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
+                                    myCellStyle.SetFillForegroundColor(new NPOI.XSSF.UserModel.XSSFColor(td.background_color_bytes));
+                                    cellStyle.FillPattern = FillPattern.SolidForeground;
+                                }
                             }
-                        }
-                        //边框
-                        if (td.border_color_bytes != null)
-                        {
-                            if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                            //边框
+                            if (td.border_color_bytes != null)
                             {
-                                var color = GetColorIndex(workbook, td.border_color_bytes, ref cColorIndex);
-                                cellStyle.BorderTop = BorderStyle.Thin;
-                                cellStyle.TopBorderColor = color;
-                                cellStyle.BorderRight = BorderStyle.Thin;
-                                cellStyle.RightBorderColor = color;
-                                cellStyle.BorderBottom = BorderStyle.Thin;
-                                cellStyle.BottomBorderColor = color;
-                                cellStyle.BorderLeft = BorderStyle.Thin;
-                                cellStyle.LeftBorderColor = color;
-                            }
-                            else
-                            {
-                                var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
-                                var color = new NPOI.XSSF.UserModel.XSSFColor(td.border_color_bytes);
-                                myCellStyle.BorderTop = BorderStyle.Thin;
-                                myCellStyle.SetTopBorderColor(color);
-                                myCellStyle.BorderRight = BorderStyle.Thin;
-                                myCellStyle.SetRightBorderColor(color);
-                                myCellStyle.BorderBottom = BorderStyle.Thin;
-                                myCellStyle.SetBottomBorderColor(color);
-                                myCellStyle.BorderLeft = BorderStyle.Thin;
-                                myCellStyle.SetLeftBorderColor(color);
+                                if (workbook is NPOI.HSSF.UserModel.HSSFWorkbook)
+                                {
+                                    var color = GetColorIndex(workbook, td.border_color_bytes, ref cColorIndex);
+                                    cellStyle.BorderTop = BorderStyle.Thin;
+                                    cellStyle.TopBorderColor = color;
+                                    cellStyle.BorderRight = BorderStyle.Thin;
+                                    cellStyle.RightBorderColor = color;
+                                    cellStyle.BorderBottom = BorderStyle.Thin;
+                                    cellStyle.BottomBorderColor = color;
+                                    cellStyle.BorderLeft = BorderStyle.Thin;
+                                    cellStyle.LeftBorderColor = color;
+                                }
+                                else
+                                {
+                                    var myCellStyle = (NPOI.XSSF.UserModel.XSSFCellStyle)cellStyle;
+                                    var color = new NPOI.XSSF.UserModel.XSSFColor(td.border_color_bytes);
+                                    myCellStyle.BorderTop = BorderStyle.Thin;
+                                    myCellStyle.SetTopBorderColor(color);
+                                    myCellStyle.BorderRight = BorderStyle.Thin;
+                                    myCellStyle.SetRightBorderColor(color);
+                                    myCellStyle.BorderBottom = BorderStyle.Thin;
+                                    myCellStyle.SetBottomBorderColor(color);
+                                    myCellStyle.BorderLeft = BorderStyle.Thin;
+                                    myCellStyle.SetLeftBorderColor(color);
+                                }
                             }
                         }
                         //设置单元格样式
