@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>1.0.5</Version>
     <Description>A simple tool for export excel file.</Description>
@@ -12,5 +12,7 @@
     <ProjectReference Include="..\Quick.Excel\Quick.Excel.csproj" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.33" />
   </ItemGroup>
-
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
 </Project>
