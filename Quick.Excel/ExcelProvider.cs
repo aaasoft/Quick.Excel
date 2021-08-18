@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Quick.Excel
 {
-    public class ExcelProvider<T>
+    public class ExcelProvider<T> : IExportProvider
         where T : IWorkbook
     {
         /// <summary>
