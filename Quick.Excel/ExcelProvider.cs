@@ -3,6 +3,7 @@ using System.IO;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using System.Collections.Generic;
+using System;
 
 namespace Quick.Excel
 {
@@ -13,6 +14,7 @@ namespace Quick.Excel
         /// 颜色序号数组
         /// </summary>
         public static readonly short[] FreeColorIndexArray = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 };
+        public static readonly int MAX_COLUMN_WIDTH = 255 * 256;
 
         private CellRangeAddress GetMergedRegion(ISheet sheet, int rowInd, int colInd)
         {
@@ -99,14 +101,30 @@ namespace Quick.Excel
                             }
                             var firstColumnWidth = sheet.GetColumnWidth(cell.ColumnIndex);
                             if (beforeColumnWidth < needColumnWidth)
-                                sheet.SetColumnWidth(cell.ColumnIndex, firstColumnWidth + needColumnWidth - beforeColumnWidth);
+                                sheet.SetColumnWidth
+                                (
+                                    cell.ColumnIndex, 
+                                    Math.Min
+                                    (
+                                        MAX_COLUMN_WIDTH,
+                                        firstColumnWidth + needColumnWidth - beforeColumnWidth
+                                    )
+                                );
                         }
                         else
                         {
                             //单个列
                             var beforeColumnWidth = sheet.GetColumnWidth(cell.ColumnIndex);
                             if (beforeColumnWidth < needColumnWidth)
-                                sheet.SetColumnWidth(cell.ColumnIndex, needColumnWidth);
+                                sheet.SetColumnWidth
+                                (
+                                    cell.ColumnIndex,
+                                    Math.Min
+                                    (
+                                        MAX_COLUMN_WIDTH,
+                                        needColumnWidth
+                                    )
+                                );
                         }
 
                         //合并单元格
