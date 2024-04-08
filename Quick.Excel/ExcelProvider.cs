@@ -94,7 +94,7 @@ namespace Quick.Excel
                         if (td.colspan > 1)
                         {
                             //如果跨列
-                            var beforeColumnWidth = 0;
+                            double beforeColumnWidth = 0;
                             for (var z = 0; z < td.colspan; z++)
                             {
                                 beforeColumnWidth += sheet.GetColumnWidth(cell.ColumnIndex + z);
