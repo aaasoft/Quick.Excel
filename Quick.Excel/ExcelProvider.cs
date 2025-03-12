@@ -4,10 +4,11 @@ using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 namespace Quick.Excel
 {
-    public abstract class ExcelProvider : IExportProvider
+    public abstract class ExcelProvider : IExportProvider, IImportProvider
     {
         /// <summary>
         /// 颜色序号数组
@@ -15,7 +16,8 @@ namespace Quick.Excel
         public static readonly short[] FreeColorIndexArray = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 };
         public static readonly int MAX_COLUMN_WIDTH = 255 * 256;
 
-
+        protected abstract IWorkbook NewWorkbook();
+        protected abstract IWorkbook OpenWorkbook(Stream stream);
 
         private CellRangeAddress GetMergedRegion(ISheet sheet, int rowInd, int colInd)
         {
@@ -45,8 +47,6 @@ namespace Quick.Excel
             }
             return -1;
         }
-
-        protected abstract IWorkbook NewWorkbook();
 
         public IWorkbook CreateWorkbook(table table)
         {
@@ -312,6 +312,42 @@ namespace Quick.Excel
             var workbook = CreateWorkbook(title, imageContent);
             workbook.Write(output);
             workbook = null;
+        }
+
+        public Dictionary<string, table> ImportTable(Stream stream)
+        {
+            var tableDict = new Dictionary<string, table>();
+            var workbook = OpenWorkbook(stream);
+            for (var sheetIndex = 0; sheetIndex < workbook.NumberOfSheets; sheetIndex++)
+            {
+                var sheet = workbook.GetSheetAt(sheetIndex);
+                var table = new table();
+                for (var rowIndex = sheet.FirstRowNum; rowIndex <= sheet.LastRowNum; rowIndex++)
+                {
+                    var row = sheet.GetRow(rowIndex);
+                    var tr = new tr();
+                    foreach (var cell in row.Cells)
+                    {
+                        string cellValue = null;
+                        switch (cell.CellType)
+                        {
+                            case CellType.String:
+                                cellValue = cell.StringCellValue;
+                                break;
+                            case CellType.Numeric:
+                                cellValue = cell.NumericCellValue.ToString();
+                                break;
+                            case CellType.Boolean:
+                                cellValue = cell.BooleanCellValue.ToString();
+                                break;
+                        }
+                        tr.Add(new td(cellValue));
+                    }
+                    table.Add(tr);
+                }
+                tableDict[sheet.SheetName] = table;
+            }
+            return tableDict;
         }
     }
 }
