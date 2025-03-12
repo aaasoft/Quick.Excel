@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net48</TargetFrameworks>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <Description>A simple tool for export excel file.</Description>
     <Authors>scbeta</Authors>
   </PropertyGroup>
