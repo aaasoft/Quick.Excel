@@ -1,11 +1,10 @@
 ﻿using NPOI.HSSF.UserModel;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using NPOI.SS.UserModel;
 
 namespace Quick.Excel
 {
-    public class HSSFExcelProvider : ExcelProvider<HSSFWorkbook>
+    public class HSSFExcelProvider : ExcelProvider
     {
+        protected override IWorkbook NewWorkbook() => new HSSFWorkbook();
     }
 }
